@@ -15,25 +15,6 @@ def apiCall(items: List[float], FIELD_IS_BAD_IF_LTE: float) -> bool:
             return False;
     return True;
 
-# The one-at-a-time method
-# This is silly because of course we know we'll need one call per field
-# with this method, but simulating it anyway just because it validates the results of the other methods
-# RETURNS [number of total API calls, number of fields successfully processed, number of individually identified bad fields]
-def method_individual_calls(items: List[float], FIELD_IS_BAD_IF_LTE: float) -> tuple[int, int, int]:
-    callCount: int = 0
-    successCount: int = 0
-    badFieldCount: int = 0    
-    for i in range(0, len(items)):
-        callCount += 1
-        singleResult: bool = apiCall(items[i:i+1], FIELD_IS_BAD_IF_LTE)
-        if (singleResult):
-            successCount += 1
-        else:
-            badFieldCount += 1
-    return [ callCount, successCount, badFieldCount ]
-
-
-
 
 # An enum to name the partition algorithms
 class PartitionMethod(Enum):
@@ -56,8 +37,7 @@ def partition_method_half_and_half(items: List[float]) -> List[int]:
     return partitions
 
 
-# Split the list such that we have as close as possible to a 50/50 chance of each
-# API call succeeding
+# Split the list such that we have as close as possible to a 50/50 chance of each API call succeeding
 def partition_method_50pct_chance_of_success(items: List[float], chanceFieldIsBad: float = STARTING_GUESS_CHANCE_FIELD_IS_BAD) -> List[int]:
 
     # Group size is number of items in each group. It is an integer as close to 50/50 as possible, but not less than 1 item per group
@@ -82,7 +62,6 @@ def partition_method_50pct_chance_of_success(items: List[float], chanceFieldIsBa
     # so this makes it [33, 33, 33, 1] so all fields will be processed
     if sum(rez) < len(items):
         rez.append(len(items) - sum(rez))
-        # rez[len(rez)-1] = rez[len(rez)-1] + (len(items) - sum(rez))
 
     # Uncomment to see how this is breaking down the group:
     # print(str(rez) + ' after chanceFieldIsBad: ' + str(chanceFieldIsBad) + ' - groupSize: ' + str(groupSize) + ' groupCount: '+str(groupCount) )
@@ -188,7 +167,6 @@ def run_cases(total_tests: int):
         print('Running '+ str(total_tests) +' trials for probability: ' + str(fieldIsBadIfLTE) + '...')
 
         # Reset the results 
-        result_SIMPLE: tuple[int, int, int] = [0, 0, 0]
         result_ONE_BY_ONE: tuple[int, int, int] = [0, 0, 0]
         result_HALF_AND_HALF: tuple[int, int, int] = [0, 0, 0]
         result_TARGET_50_50: tuple[int, int, int] = [0, 0, 0]
@@ -197,11 +175,6 @@ def run_cases(total_tests: int):
 
             # Generate a single case (one row, with, e.g., 100 fields)
             case = new_case()
-            
-            # Double-check results with the simplified one-by-one method
-            result_SIMPLE = tuple(map(lambda i, j: i + j, \
-                result_SIMPLE, \
-                method_individual_calls(case, fieldIsBadIfLTE)))
 
             # Validate the recursive process with a one-by-one partition
             result_ONE_BY_ONE = tuple(map(lambda i, j: i + j, \
@@ -224,10 +197,6 @@ def run_cases(total_tests: int):
             learnedChanceFieldIsBad = result_TARGET_50_50[2] / (result_TARGET_50_50[2] + result_TARGET_50_50[1])
 
         # Add to the result set
-
-        # SIMPLE is just used for validating the results
-        # resultSet.append(['SIMPLE',       fieldIsBadIfLTE, result_SIMPLE[0]             / total_tests, total_tests, result_SIMPLE[0],       result_SIMPLE[1],       result_SIMPLE[2]])
-        
         resultSet.append(['ONE_BY_ONE',   fieldIsBadIfLTE, round(result_ONE_BY_ONE[0]         / total_tests, 4), total_tests, result_ONE_BY_ONE[0],      result_ONE_BY_ONE[1],   result_ONE_BY_ONE[2]])
         resultSet.append(['NAIVE_BINARY', fieldIsBadIfLTE, round(result_HALF_AND_HALF[0]      / total_tests, 4), total_tests, result_HALF_AND_HALF[0],   result_HALF_AND_HALF[1],    result_HALF_AND_HALF[2]])
         resultSet.append(['SMART_BINARY', fieldIsBadIfLTE, round(result_TARGET_50_50[0]       / total_tests, 4), total_tests, result_TARGET_50_50[0],    result_TARGET_50_50[1],     result_TARGET_50_50[2]])
@@ -240,9 +209,6 @@ def run_cases(total_tests: int):
         myWriter.writerow(headers)
         for row in resultSet:
             myWriter.writerow(row)
-            
-        
-
 
 total_tests_desired = int(input("How many tests should we run? "))
 
